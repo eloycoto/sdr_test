@@ -5,7 +5,8 @@ from gnuradio import audio
 import os
 
 class wav_to_fd(gr.top_block):
-    def __init__(self, wav_file, fd):
+    # FD not longer needed.
+    def __init__(self, wav_file):
         gr.top_block.__init__(self, "WAV to File Descriptor")
 
         # Variables
@@ -30,24 +31,31 @@ class wav_to_fd(gr.top_block):
         # Convert float to complex
         self.float_to_complex = blocks.float_to_complex()
 
-        # File descriptor sink
-        self.fd_sink = blocks.file_descriptor_sink(
-            gr.sizeof_gr_complex,
-            fd
+        # # File descriptor sink
+        # self.fd_sink = blocks.file_descriptor_sink(
+        #     gr.sizeof_gr_complex,
+        #     fd
+        # )
+
+        self.sink = audio.sink(
+            self.samp_rate,    # Sample rate
+            "pipewire",        # Audio backend
+            True              # OK to block
         )
 
         # Connections
         self.connect(self.wav_source, self.throttle)
         self.connect(self.throttle, self.mono)
         self.connect(self.mono, self.probe)  # Add probe in the chain
-        self.connect(self.mono, self.float_to_complex)
-        self.connect(self.float_to_complex, self.fd_sink)
+        # self.connect(self.mono, self.float_to_complex)
+        self.connect(self.mono, self.sink)
+        # self.connect(self.float_to_complex, self.sink)
 
-def create_fake_fd(file_path, mode="wb"):  # Changed to binary mode
-    file = open(file_path, mode)
-    fd = file.fileno()
-    print(f"Fake FD created: {fd}")
-    return file, fd
+# def create_fake_fd(file_path, mode="wb"):  # Changed to binary mode
+#     file = open(file_path, mode)
+#     fd = file.fileno()
+#     print(f"Fake FD created: {fd}")
+#     return file, fd
 
 def main():
     import sys
@@ -58,23 +66,23 @@ def main():
         sys.exit(1)
 
     wav_file = sys.argv[1]
-    file_path = "fake_fd_test.bin"  # Changed to .bin extension
+    # file_path = "fake_fd_test.bin"  # Changed to .bin extension
 
     # Create a fake FD
-    file, fd = create_fake_fd(file_path)
+    # file, fd = create_fake_fd(file_path)
 
-    if not os.path.exists(wav_file):
-        print(f"Error: WAV file '{wav_file}' does not exist")
-        sys.exit(1)
+    # if not os.path.exists(wav_file):
+    #     print(f"Error: WAV file '{wav_file}' does not exist")
+    #     sys.exit(1)
 
-    try:
-        os.fstat(fd)
-    except OSError:
-        print(f"Error: Invalid file descriptor {fd}")
-        sys.exit(1)
+    # try:
+    #     os.fstat(fd)
+    # except OSError:
+    #     print(f"Error: Invalid file descriptor {fd}")
+    #     sys.exit(1)
 
     # Create and run the flowgraph
-    tb = wav_to_fd(wav_file, fd)
+    tb = wav_to_fd(wav_file)
     print(f"Starting flowgraph with sample rate: {tb.samp_rate}")
 
     tb.start()
@@ -96,11 +104,9 @@ def main():
     finally:
         tb.stop()
         tb.wait()
-        file.close()
+        # file.close()
 
     # Verify output
-    output_size = os.path.getsize(file_path)
-    print(f"\nOutput file size: {output_size} bytes")
 
 if __name__ == '__main__':
     main()

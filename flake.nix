@@ -18,6 +18,14 @@
             numpy
           ];
 
+          combinedAlsaPlugins = pkgs.symlinkJoin {
+            name = "combined-alsa-plugins";
+            paths = [
+              "${pkgs.alsa-plugins}/lib/alsa-lib"
+              "${pkgs.pipewire}/lib/alsa-lib"
+            ];
+          };
+
         in
         with pkgs;
         {
@@ -27,10 +35,19 @@
               gnuradioPackages.osmosdr
               cmake
               pkg-config
+              pipewire
+              alsa-lib
+              alsa-plugins
             ];
 
           shellHook = ''
             export PYTHONPATH="${pkgs.gnuradio}/lib/python3.11/site-packages:$PYTHONPATH"
+            export ALSA_PLUGIN_DIR="${combinedAlsaPlugins}"
+            export LD_LIBRARY_PATH=${pkgs.lib.makeLibraryPath [
+              pkgs.pipewire
+              pkgs.alsa-lib
+              pkgs.alsa-plugins
+            ]}:$LD_LIBRARY_PATH
           '';
           };
         }
