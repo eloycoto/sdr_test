@@ -36,13 +36,15 @@
         {
           devShells.default = mkShell {
             buildInputs = with pkgs; [
-              gnuradio
-              gnuradioPackages.osmosdr
-              cmake
-              pkg-config
-              pipewire
               alsa-lib
               alsa-plugins
+              clang
+              cmake
+              gnuradio
+              gnuradioPackages.osmosdr
+              libclang
+              pipewire
+              pkg-config
               (rust-bin.stable.latest.default.override {
                 extensions = [ "rust-src" ];
               })
@@ -51,6 +53,8 @@
           shellHook = ''
             export PYTHONPATH="${pkgs.gnuradio}/lib/python3.11/site-packages:$PYTHONPATH"
             export ALSA_PLUGIN_DIR="${combinedAlsaPlugins}"
+            LIBCLANG_PATH="${llvmPackages.libclang.lib}/lib";
+            INCLUDES_PATH="${llvmPackages.libclang.lib}/includes";
             export LD_LIBRARY_PATH=${pkgs.lib.makeLibraryPath [
               pkgs.pipewire
               pkgs.alsa-lib
