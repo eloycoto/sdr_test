@@ -1,17 +1,22 @@
 {
-  description = "Langchain flake with tools";
+  description = "SDR Test";
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     eloy.url = "github:eloycoto/nix-custom-overlay";
+    rust-overlay.url = "github:oxalica/rust-overlay";
+
   };
-  outputs = { self, nixpkgs, flake-utils, eloy }:
+  outputs = { self, nixpkgs, flake-utils, eloy, rust-overlay }:
     flake-utils.lib.eachDefaultSystem
       (system:
         let
           pkgs = import nixpkgs {
             inherit system;
-            overlays = [eloy.overlays.default];
+            overlays = [
+              eloy.overlays.default
+              (import rust-overlay)
+            ];
           };
 
           extraPythonPackages = with pkgs.gnuradio.python.pkgs; [
@@ -38,6 +43,9 @@
               pipewire
               alsa-lib
               alsa-plugins
+              (rust-bin.stable.latest.default.override {
+                extensions = [ "rust-src" ];
+              })
             ];
 
           shellHook = ''
